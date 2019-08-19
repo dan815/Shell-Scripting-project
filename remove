@@ -64,15 +64,25 @@ function singleRemove {
 	mvFile
 	updateRestoreFile
 }
-#note that $* will be undefined if you put all this in anothe function
-varHold=$*
+#note that $* will be undefined if you put all this in another function
+echo $*
+arrHold=($*)
+echo $varHold
+varHold1=$1
+#C=("${arrHold[@]:1}") #this slices array from 2nd arg
 function multiRemove {
 	#inital check for input
 	errCheck
-	for i in $varHold
+	for i in ${arrHold[@]}
+		
 	do
 		inputFileName=$i
 		singleRemove
 	done
 }
+
+#function iMultiRemove {}
+#function vMultiRemove {}
+#function ivMultiRemove {}
+
 multiRemove
