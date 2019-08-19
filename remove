@@ -1,0 +1,70 @@
+#!/bin/bash
+
+numArg=$#
+inputFileName=$1
+
+function mkDeleted() 
+{	#makes deleted dir 
+	if [ -d $HOME/deleted ] 
+	then
+		echo " $HOME/deleted Exists"
+	else 
+		echo "Making Dir"
+		mkdir $HOME/deleted
+	fi
+}
+
+function errCheck 
+{ 	#Checks if number of args = 0
+	if [ $numArg -eq 0 ] ; then
+		echo "remove: missing operand"
+		exit 9
+	fi
+	#checks if it is a directory
+	if [ -d $inputFileName ] ; then
+		echo "cannot remove '$inputFileName' : Is a directory"
+		exit 10
+	fi
+	#checks if file exists
+	if [ -e $inputFileName ] ; then
+		if [ $(readlink -m $inputFileName) = $(readlink -m $HOME/remove) ] ; then
+			echo "STOP TRYING TO REMOVE REMOVE"
+			exit 12
+		fi
+	echo "File Found"	
+	else
+		echo "cannot remove '$inputFileName': No such file"
+		exit 11
+	fi
+}
+
+function mvFile
+{ 	#moves the file to $HOME/deleted and renames it with inode, i.e. f1--> f1_1234
+	echo "moving file to deleted..."
+	absPath=$(readlink -m $inputFileName)
+	inode=$(stat -c%i $absPath)
+	fileName=$(basename $inputFileName)
+	mv $inputFileName $HOME/deleted/$fileName"_"$inode
+}
+
+function updateRestoreFile
+{	#checks for .restore file and logs the removed file
+	if [ -e $HOME/.restore ] ; then
+		echo ".restore file exists"
+	else
+		touch $HOME/.restore
+	fi
+	echo $fileName"_"$inode":"$absPath >> $HOME/.restore
+}
+
+function main {
+	#First makes deleted bin if it doesn't exist
+	mkDeleted
+	#Checks whether arg =0,, input arg is a file and existing
+	errCheck
+	#Moves file to $HOME/deleted with fname_inode format
+	mvFile
+	#Logs the file and absolute path info to $HOME/.restore file
+	updateRestoreFile
+}
+main
