@@ -67,10 +67,12 @@ function singleRemove {
 #note that $* will be undefined if you put all this in anothe function
 varHold=$*
 function multiRemove {
-for i in $varHold
-do
-	inputFileName=$i
-	singleRemove
-done
+	#inital check for input
+	errCheck
+	for i in $varHold
+	do
+		inputFileName=$i
+		singleRemove
+	done
 }
 multiRemove
