@@ -58,13 +58,12 @@ function updateRestoreFile
 }
 
 function main {
-	#First makes deleted bin if it doesn't exist
+	#Executes functions in order to: make delete bin > errCheck > mvFile > updateLog
 	mkDeleted
-	#Checks whether arg =0,, input arg is a file and existing
 	errCheck
-	#Moves file to $HOME/deleted with fname_inode format
 	mvFile
-	#Logs the file and absolute path info to $HOME/.restore file
 	updateRestoreFile
 }
 main
+
+
