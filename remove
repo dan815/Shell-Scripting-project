@@ -57,13 +57,20 @@ function updateRestoreFile
 	echo $fileName"_"$inode":"$absPath >> $HOME/.restore
 }
 
-function main {
+function singleRemove {
 	#Executes functions in order to: make delete bin > errCheck > mvFile > updateLog
 	mkDeleted
 	errCheck
 	mvFile
 	updateRestoreFile
 }
-main
-
-
+#note that $* will be undefined if you put all this in anothe function
+varHold=$*
+function multiRemove {
+for i in $varHold
+do
+	inputFileName=$i
+	singleRemove
+done
+}
+multiRemove
