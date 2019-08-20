@@ -3,86 +3,178 @@
 numArg=$#
 inputFileName=$1
 
-function mkDeleted() 
-{	#makes deleted dir 
-	if [ -d $HOME/deleted ] 
-	then
-		echo " $HOME/deleted Exists"
-	else 
-		echo "Making Dir"
-		mkdir $HOME/deleted
-	fi
+function mkDeleted()
+{   #makes deleted dir
+    if [ -d $HOME/deleted ] ;
+    then
+      varTemp=0 #echo  "$HOME/deleted Exists"
+    else
+        #echo "Making Dir"
+        mkdir $HOME/deleted
+    fi
 }
 
-function errCheck 
-{ 	#Checks if number of args = 0
-	if [ $numArg -eq 0 ] ; then
-		echo "remove: missing operand"
-		exit 9
-	fi
-	#checks if it is a directory
-	if [ -d $inputFileName ] ; then
-		echo "cannot remove '$inputFileName' : Is a directory"
-		exit 10
-	fi
-	#checks if file exists
-	if [ -e $inputFileName ] ; then
-		if [ $(readlink -m $inputFileName) = $(readlink -m $HOME/remove) ] ; then
-			echo "STOP TRYING TO REMOVE REMOVE"
-			exit 12
-		fi
-	echo "File Found"	
-	else
-		echo "cannot remove '$inputFileName': No such file"
-		exit 11
-	fi
+function errCheck
+{   #Checks if number of args = 0
+    if [ $numArg -eq 0 ] ; then
+        echo "remove: missing operand"
+        exit 21
+    fi
+    #checks if it is a directory
+    if [ -d $inputFileName ] ; then
+        echo "cannot remove '$inputFileName' : Is a directory"
+        exit 26
+    fi
+    #checks if file exists
+    if [ -e $inputFileName ] ; then
+        if [ $(readlink -m $inputFileName) = $(readlink -m $HOME/remove) ] ; then
+            echo "STOP TRYING TO REMOVE REMOVE"
+            exit 32
+        fi
+    #echo "File Found"
+    else
+        echo "cannot remove '$inputFileName': No such file"
+        exit 37
+    fi
 }
 
 function mvFile
-{ 	#moves the file to $HOME/deleted and renames it with inode, i.e. f1--> f1_1234
-	echo "moving file to deleted..."
-	absPath=$(readlink -m $inputFileName)
-	inode=$(stat -c%i $absPath)
-	fileName=$(basename $inputFileName)
-	mv $inputFileName $HOME/deleted/$fileName"_"$inode
+{   #moves the file to $HOME/deleted and renames it with inode, i.e. f1--> f1_1234
+#    echo "moving file to deleted..."
+    absPath=$(readlink -m $inputFileName)
+    inode=$(stat -c%i $absPath)
+    fileName=$(basename $inputFileName)
+    mv $inputFileName $HOME/deleted/$fileName"_"$inode
 }
 
 function updateRestoreFile
-{	#checks for .restore file and logs the removed file
-	if [ -e $HOME/.restore ] ; then
-		echo ".restore file exists"
-	else
-		touch $HOME/.restore
-	fi
-	echo $fileName"_"$inode":"$absPath >> $HOME/.restore
+{   #checks for .restore.info file and logs the removed file
+    if [ -e $HOME/.restore.info ] ; then
+       varTemp=0 #(echo ".restore.info file exists"
+    else
+        touch $HOME/.restore.info
+    fi
+    echo $fileName"_"$inode":"$absPath >> $HOME/.restore.info
 }
 
 function singleRemove {
-	#Executes functions in order to: make delete bin > errCheck > mvFile > updateLog
-	mkDeleted
-	errCheck
-	mvFile
-	updateRestoreFile
+    #Executes functions in order to: make delete bin > errCheck > mvFile > updateLog
+    mkDeleted
+    errCheck
+    mvFile
+    updateRestoreFile
 }
-#note that $* will be undefined if you put all this in another function
-echo $*
-arrHold=($*)
-echo $varHold
-varHold1=$1
-#C=("${arrHold[@]:1}") #this slices array from 2nd arg
+
 function multiRemove {
-	#inital check for input
-	errCheck
-	for i in ${arrHold[@]}
-		
-	do
-		inputFileName=$i
-		singleRemove
-	done
+    #inital check for input
+    errCheck
+    for i in $varHold
+    do
+        inputFileName=$i
+        case $1 in #0- no opt, 1-verbose,2-interactive,3-verb+inter
+        0)singleRemove ;;
+        1)singleRemove
+            echo "removed $inputFileName" ;;
+        2) read -p "Do you want to remove $inputFileName [n/y]" choice
+            if [[ $choice = [Yy]* ]] ; then
+                singleRemove
+            else
+                #echo "Not removing $inputFileName"
+                continue
+            fi ;;
+        3)  read -p "Do you want to remove $inputFileName [n/y]" choice
+            if [[ $choice = [Yy]* ]] ; then
+                singleRemove
+                echo "removed $inputFileName"
+            else
+                #echo "Not removing $inputFileName"
+                continue
+            fi ;;
+        *)
+            echo "options accepted:  -vi,-iv,-i,-v,-r options only!" ;;
+        esac
+    done
+}
+#passed different option into multiRemove based on -i,-v,-r options
+function multiRemoveOpt {
+case $optNum in
+    0)  echo "no option"
+        multiRemove $optNum ;;
+    1)  echo "verbose mode"
+        multiRemove $optNum ;;
+    2)  echo "interactive mode"
+        multiRemove $optNum ;;
+    3)  echo "interactive and verbose mode"
+        multiRemove $optNum ;;
+    4)  echo "recursive mode on" 
+	if [ -d $inputFileName ] ; then
+	   # recurseRemoveFiles $inputFileName
+	   mainPath=$inputFileName #absolute path from readlink
+	   echo "mainPath: $mainPath"
+	   recurseRemove $mainPath
+	   echo "what do i do?!?!?"
+	else 
+		echo "must enter dir with -r option"
+	fi ;;
+    *)  echo "no valid options" ;;
+esac
 }
 
-#function iMultiRemove {}
-#function vMultiRemove {}
-#function ivMultiRemove {}
+#function recurseRemoveDir{}
+#function recurseRemoveFiles {
+#	filesToRemove=$(find $1 -type f -follow -print)
+#	bash remove -i $filesToRemove #$optNum
+#}
+recurseRemove () {
+currPath=$1
+echo "$currPath:currpath"
+ls $currPath
+if [ $(ls $currPath | wc -c) -eq 0 ] ; then
+	if [ $currPath = $mainPath ] ; then
+		rmdir $currPath
+		exit 99
+	else
+		holdPrev=$(dirname $currPath)
+		echo "going to $holdPrev"
+		rmdir $currPath
+		recurseRemove $holdPrev
+	fi
+else
+	for i in $(ls $currPath)
+	do
+		echo $i this is i
+		absPath=$currPath/$i
+		echo $absPath:absPath
+		if [ -d $absPath ] ; then
+			recurseRemove $absPath
+		else
+			echo "IM HERE LINE 150"
+			bash remove $absPath
+		fi
+	done
+	recurseRemove $currPath	
+fi
 
-multiRemove
+}
+
+#This section shifts the input args without options and stores option value
+optNum=0
+while getopts :ivr opt
+do
+    case $opt in
+    i)  optNum=$[ $optNum + 2 ] ;;
+    v)  optNum=$[ $optNum + 1 ] ;;
+    r)  optNum=$[ $optNum + 4 ] ;;
+    \?) echo "$0: invalid option -- '$OPTARG'"
+        exit 79 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+varHold=$*
+inputFileName=$(readlink -m $1) #why need to instantiate?
+echo "$inputFileName:inputfile"
+#-------------------------------------------------------------------------
+
+multiRemoveOpt
+
+

@@ -1,59 +1,59 @@
 #!/bin/bash
 
+
 inputFileName=$1
 echo $inputFileName
 numArgs=$#
 restoreLoc=0
-function isValidFile 
-{ 	#Checks if there is an arg and inputFileName exists
-	if [ $numArgs -eq 0 ] ; then
-		echo "No filename provided"
-		exit 5
-	fi
-	
-	
-	if [ -e $HOME/deleted/$inputFileName ] ; then
-		echo "File exists hooray!!"
-	else
-		echo "Invalid File Name"
-		exit 6
-	fi	
+function isValidFile
+{   #Checks if there is an arg and inputFileName exists
+    if [ $numArgs -eq 0 ] ; then
+        echo "No filename provided"
+        exit 5
+    fi
+    if [ -e $HOME/deleted/$inputFileName ] ; then
+       varTemp=0 #echo "File exists hooray!!"
+    else
+        echo "Invalid File Name"
+        exit 6
+    fi
 }
 
 function mvPathLoc
-{	#Will have problems if filename contains ":"...
-	restoreLoc=$(cat $HOME/.restore | grep $inputFileName | cut -d ":" -f2)
-	#restoreLoc=$(cat $HOME/.restore | grep $inputFileName | awk -F ":" '{print $NF}')
+{   #Will have problems if filename contains ":"...
+    restoreLoc=$(cat $HOME/.restore.info | grep $inputFileName | cut -d ":" -f2)
+    #restoreLoc=$(cat $HOME/.restore.info | grep $inputFileName | awk -F ":" '{print $NF}')
 }
 
 function ifOverwrite
-{	#Requests overwrite confirmation, if restore location of file is not empty
-	if [ -e $restoreLoc ] ; then
-		read -p "Do you want to overwrite [n/y]?:  " response
-		if [[ $response = [Yy]* ]] ; then
-		echo "overwrite commencing"
-			mv $HOME/deleted/$inputFileName $restoreLoc
-			updateLog
-		else
-			echo "overwrite cancelled"
-			exit 7
-		fi
-	else
-		echo "nothing to overwrite"
-		mv $HOME/deleted/$inputFileName $restoreLoc
-		updateLog
-	fi
+{   #Requests overwrite confirmation, if restore location of file is not empty
+    if [ -e $restoreLoc ] ; then
+        read -p "Do you want to overwrite [n/y]?:  " response
+        if [[ $response = [Yy]* ]] ; then
+        echo "overwrite commencing"
+            mv $HOME/deleted/$inputFileName $restoreLoc
+            updateLog
+        else
+            echo "overwrite cancelled"
+            exit 7
+        fi
+    else
+        echo "nothing to overwrite"
+        mv $HOME/deleted/$inputFileName $restoreLoc
+        updateLog
+    fi
 }
 
-function updateLog 
-{ 	#removes line in $HOME/.restore after restoring file
-	sed -i "/$inputFileName/d" $HOME/.restore
+function updateLog
+{   #removes line in $HOME/.restore.info  after restoring file
+    sed -i "/$inputFileName/d" $HOME/.restore.info
 }
 
 function main
-{	#executes functions in the right order
-	isValidFile
-	mvPathLoc
-	ifOverwrite
+{   #executes functions in the right order
+    isValidFile
+    mvPathLoc
+    ifOverwrite
 }
 main
+
